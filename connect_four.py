@@ -56,41 +56,38 @@ def calc_score(board:List[str], token)->State:
 
             if cur_x >= 3 and cur_y <= ROWS-4:
                 # Check Left-Diagonal
-                indices = [get_index(cur_x-d, cur_y+d) for d in range(1,4)]
-                values = [board[i] for i in indices]
+                values = board[index::COLUMNS][1:4]
                 is_win = all([x == value for x in values])
                 if is_win:
                     return State.Win if value == token else State.Lose
             
             if cur_y <= ROWS-4:
                 # Check Vertical
-                indices = [get_index(cur_x, cur_y+d) for d in range(1,4)]
-                values = [board[i] for i in indices]
+                values = board[index::COLUMNS][1:4]
                 is_win = all([x == value for x in values])
                 if is_win:
                     return State.Win if value == token else State.Lose
 
             if cur_x <= COLUMNS - 4 and cur_y <= ROWS-4:
                 # Check Right-Diagonal
-                indices = [get_index(cur_x+d, cur_y+d) for d in range(1,4)]
-                values = [board[i] for i in indices]
+                values = board[index::COLUMNS+1][1:4]
                 is_win = all([x == value for x in values])
                 if is_win:
                     return State.Win if value == token else State.Lose
 
             if cur_x <= COLUMNS-4:
                 # Check Right Horizontal
-                indices = [get_index(cur_x+d, cur_y) for d in range(1,4)]
-                values = [board[i] for i in indices]
+                values = board[index::1][1:4]
                 is_win = all([x == value for x in values])
                 if is_win:
                     return State.Win if value == token else State.Lose
                 
     return State.Tie if board.count(None) == 0 else State.Playing
 
-#board = ["o","o","x","o","x","o","x","x","o","x","o","o","o","x","o","x","x","o","o","x","o","o","o","x","o","o","x","o","o","o"]
+# board = ["o","o","x","o","x","o","x","x","o","x","o","o","o","x","o","x","x","o","o","x","o","o","o","x","o","o","x","o","o","o"]
+# calc_score(board,'x')
 
-
+# Generate an empty game board
 board = [None]*ROWS*COLUMNS
 
 tokens = ['x','o']
@@ -100,7 +97,7 @@ while calc_score(board,tokens[turn%2]) == State.Playing:
     print_board(board)
     inputSuccess = False
     while not inputSuccess:
-        col_choice = input(f"Turn {turn}: Which Column do you want to play? (Enter Number between 0 and {COLUMNS - 1}")
+        col_choice = input(f"Turn {turn}: Which Column do you want to play? (Enter Number between 0 and {COLUMNS - 1}: ")
         inputSuccess = drop_token(board, int(col_choice), tokens[turn%2])
 
     turn+=1
