@@ -1,8 +1,17 @@
 # Dan Staves
 # Project 3 - Adversarial Search: Connect 4
 
+from enum import Enum
+from typing import List
+
 COLUMNS = 6
 ROWS = 5
+
+class State(Enum):
+    Win = 1
+    Lose = -1
+    Tie = 0
+    Playing = 5
 
 # [ | | | | | ]
 # [ | | | | | ]
@@ -19,6 +28,7 @@ def get_index(x:int, y:int)->int:
     return y * COLUMNS + x
 
 def print_board(board):
+    print(' '.join([str(x) for x in range(COLUMNS)]))
     for i in range(ROWS)[::-1]:
         row_start = i * COLUMNS
         row_end = row_start + COLUMNS
@@ -26,7 +36,17 @@ def print_board(board):
 
         print('|'.join([" " if x is None else str(x) for x in row]))
 
-def calc_score(board, token)->int:
+def drop_token(board, column, token)->bool:
+    """Drop a token in a specified column.
+    Return True is successful, False if the column is full"""
+    for index in range(column,ROWS*COLUMNS, COLUMNS):
+        if not board[index]:
+            board[index]=token
+            return True
+        
+    return False
+
+def calc_score(board:List[str], token)->State:
     """Calculate the score of the game
     1: win, 0: draw, -1: lose"""
     for index, value in enumerate(board):
@@ -40,7 +60,7 @@ def calc_score(board, token)->int:
                 values = [board[i] for i in indices]
                 is_win = all([x == value for x in values])
                 if is_win:
-                    return 1 if value == token else -1
+                    return State.Win if value == token else State.Lose
             
             if cur_y <= ROWS-4:
                 # Check Vertical
@@ -48,7 +68,7 @@ def calc_score(board, token)->int:
                 values = [board[i] for i in indices]
                 is_win = all([x == value for x in values])
                 if is_win:
-                    return 1 if value == token else -1
+                    return State.Win if value == token else State.Lose
 
             if cur_x <= COLUMNS - 4 and cur_y <= ROWS-4:
                 # Check Right-Diagonal
@@ -56,7 +76,7 @@ def calc_score(board, token)->int:
                 values = [board[i] for i in indices]
                 is_win = all([x == value for x in values])
                 if is_win:
-                    return 1 if value == token else -1
+                    return State.Win if value == token else State.Lose
 
             if cur_x <= COLUMNS-4:
                 # Check Right Horizontal
@@ -64,14 +84,26 @@ def calc_score(board, token)->int:
                 values = [board[i] for i in indices]
                 is_win = all([x == value for x in values])
                 if is_win:
-                    return 1 if value == token else -1
+                    return State.Win if value == token else State.Lose
                 
-    return 0
+    return State.Tie if board.count(None) == 0 else State.Playing
 
-board = ["o","o","x","o","x","o","x","x","o","x","o","o","o","x","o","x","x","o","o","x","o","o","o","x","o","o","x","o","o","o"]
+#board = ["o","o","x","o","x","o","x","x","o","x","o","o","o","x","o","x","x","o","o","x","o","o","o","x","o","o","x","o","o","o"]
 
 
+board = [None]*ROWS*COLUMNS
 
+tokens = ['x','o']
+turn = 0
+while calc_score(board,tokens[turn%2]) == State.Playing:
+
+    print_board(board)
+    inputSuccess = False
+    while not inputSuccess:
+        col_choice = input(f"Turn {turn}: Which Column do you want to play? (Enter Number between 0 and {COLUMNS - 1}")
+        inputSuccess = drop_token(board, int(col_choice), tokens[turn%2])
+
+    turn+=1
 
 print_board(board)
-calc_score(board, "o")
+print(calc_score(board, "o"))
