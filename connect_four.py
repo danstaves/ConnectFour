@@ -1,10 +1,10 @@
 # Dan Staves
 # Project 3 - Adversarial Search: Connect 4
 
-from enum import Enum
+from enum import IntEnum
 from typing import List, Self
 
-class EndState(Enum):
+class EndState(IntEnum):
     Win = 1
     Lose = -1
     Tie = 0
@@ -15,6 +15,11 @@ class Grid:
         self.columns = cols
         self.grid = [None] * rows * cols
 
+    def copy(self)->Self:
+        newGrid = Grid(self.rows, self.columns)
+        newGrid.grid = self.grid.copy()
+        return newGrid
+
     def __str__(self)->str:
         board = ' '.join([str(x) for x in range(self.columns)])
         for i in range(self.rows)[::-1]:
@@ -24,16 +29,35 @@ class Grid:
 
             board += '\n' + '|'.join([" " if x is None else str(x) for x in row])
         return board
+    
+    def __eq__(self, value):
+        if len(self.grid) != len(value.grid):
+            return False
+        
+        for index in range(len(self.grid)):
+            if self.grid[index] != value.grid[index]:
+                return False
+            
+        return True
 
-    def drop_token(self, column, token)->bool:
+    def drop_token(self, column, token)->Self:
         """Drop a token in a specified column.
         Return True is successful, False if the column is full"""
+        new_grid = self.copy()
         for index in range(column,self.rows*self.columns, self.columns):
-            if not self.grid[index]:
-                self.grid[index]=token
-                return True
-            
-        return False
+            if not new_grid.grid[index]:
+                new_grid.grid[index]=token
+                return new_grid
+    
+    def get_valid_moves(self)->List[int]:
+        def is_column_available(column)->bool:
+            for index in range(column, self.columns * self.rows, self.columns):
+                if self.grid[index] is None: return True
+                
+            return False
+        
+        return [col for col in range(self.columns) if is_column_available(col)]
+
     
     def check_endgame(self, token)->EndState:
         """Return the End State of the game or None if the game is not finished"""
@@ -79,17 +103,50 @@ class Grid:
 
     def get_index(self, x:int, y:int)->int:
         return y * self.columns + x
-    
 
+tokens = ["o", "x"]
+class AI:
+    def __init__(self, token:str):
+        self.token = token
 
+    def play_turn(self, board:Grid):
+        """Play the next move on the input game board"""
 
+        def calculate_utility(parent:Grid, minimax_level:int):
 
+            if (utility := parent.check_endgame(self.token)):
+                return utility
+            elif minimax_level > 4:
+                return EndState.Tie
+            else:
+                #calculate the utility from children
+                best = EndState.Tie
+                current_player = minimax_level % 2
+                current_token = tokens[current_player]
+                use_min = current_player == 0
+                for possible_move in parent.get_valid_moves():
+                    state = parent.drop_token(possible_move, current_token)
+                    utility = calculate_utility(state, minimax_level+1)
+                    if (use_min and utility < best) or (not use_min and utility > best):
+                        best = utility
+                        break
+                
+                return best
+            
+        # Pick the highest score for each of the children
+        
+        best_score = None
+        best_move = None
+        for possible_move in board.get_valid_moves():
+            state = board.drop_token(possible_move, self.token)
+            utility = calculate_utility(state, 0)
 
+            if best_score is None or utility > best_score:
+                best_score = utility
+                best_move = state
+        
+        return best_move
 
-
-
-
-# board = ["o","o","x","o","x","o","x","x","o","x","o","o","o","x","o","x","x","o","o","x","o","o","o","x","o","o","x","o","o","o"]
-# calc_score(board,'x')
-
-
+                    
+                    
+            
