@@ -3,6 +3,7 @@
 
 from enum import IntEnum
 from typing import List, Self
+import time
 
 class EndState(IntEnum):
     Win = 1
@@ -112,39 +113,46 @@ class AI:
     def play_turn(self, board:Grid):
         """Play the next move on the input game board"""
 
-        def calculate_utility(parent:Grid, minimax_level:int):
+        start_time = time.time()
 
-            if (utility := parent.check_endgame(self.token)):
-                return utility
-            elif minimax_level > 4:
-                return EndState.Tie
+        def calculate_utility(parent:Grid, minimax_level:int) -> tuple[EndState, int]:
+
+            if time.time() - start_time > 10:
+                return (EndState.Tie, minimax_level)
+            elif (utility := parent.check_endgame(self.token)):
+                return (utility, minimax_level)
             else:
                 #calculate the utility from children
                 best = EndState.Tie
+                deepest = 0
                 current_player = minimax_level % 2
                 current_token = tokens[current_player]
                 use_min = current_player == 0
                 for possible_move in parent.get_valid_moves():
                     state = parent.drop_token(possible_move, current_token)
-                    utility = calculate_utility(state, minimax_level+1)
+                    utility, max_level = calculate_utility(state, minimax_level+1)
+                    deepest = max(deepest, max_level)
                     if (use_min and utility < best) or (not use_min and utility > best):
                         best = utility
                         break
                 
-                return best
+                return (best, deepest)
             
         # Pick the highest score for each of the children
         
         best_score = None
         best_move = None
-        for possible_move in board.get_valid_moves():
-            state = board.drop_token(possible_move, self.token)
-            utility = calculate_utility(state, 0)
-
-            if best_score is None or utility > best_score:
-                best_score = utility
-                best_move = state
+        deepest_search = 0
+        next_states = [board.drop_token(possible_move, self.token) for possible_move in board.get_valid_moves()]
+        for state in next_states:
+            if time.time() - start_time <= 10:
+                utility, max_level = calculate_utility(state, 0)
+                deepest_search = max(deepest_search, max_level)
+                if best_score is None or utility > best_score:
+                    best_score = utility
+                    best_move = state
         
+        print(f"Max Level: {deepest_search}")
         return best_move
 
                     
