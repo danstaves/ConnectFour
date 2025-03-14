@@ -1,13 +1,23 @@
 # Dan Staves
 # Project 3 - Adversarial Search: Connect 4
 
-from enum import IntEnum
+from enum import IntEnum, auto
 from typing import List, Self
 
 class EndState(IntEnum):
     Win = 1
     Lose = -1
     Tie = 0
+
+class Direction(IntEnum):
+    North = auto()
+    NorthEast = auto()
+    East = auto()
+    SouthEast = auto()
+    South = auto()
+    SouthWest = auto()
+    West = auto()
+    NorthWest = auto()
 
 class Grid:
     def __init__(self, rows:int, cols:int):
@@ -30,6 +40,9 @@ class Grid:
             board += '\n' + '|'.join([" " if x is None else str(x) for x in row])
         return board
     
+    def __repr__(self):
+        return self.__str__()
+    
     def __eq__(self, value):
         if len(self.grid) != len(value.grid):
             return False
@@ -48,6 +61,13 @@ class Grid:
             if not new_grid.grid[index]:
                 new_grid.grid[index]=token
                 return new_grid
+            
+    def get_valid_indices(self)->List[int]:
+        def get_column_index(column)->bool:
+            for index in range(column, self.columns * self.rows, self.columns):
+                if self.grid[index] is None: return index
+
+        return [index for c in range(self.columns) if (index:=get_column_index(c)) is not None]
     
     def get_valid_moves(self)->List[int]:
         def is_column_available(column)->bool:
@@ -58,6 +78,74 @@ class Grid:
         
         return [col for col in range(self.columns) if is_column_available(col)]
 
+    def get_longest_run(self, token)->int:
+        """Return the number and length of runs"""
+
+        #Get the index of the top token in each column
+        def get_top_index(col):
+            for index in range(col, self.rows*self.columns, self.columns):
+                if self.grid[index] is not None: yield index
+
+        available_indices = [col_index[-1] for col in range(self.columns) if len(col_index:=[i for i in get_top_index(col)]) > 0 ]
+
+        neighbor_count = 0
+        for index in available_indices:
+            # Check diagonals, vertical, and horizontal for 4 in a row
+            cur_x, cur_y = self.get_coord(index)
+
+            # Check North West
+            nw_count = 0
+            for check_x, check_y in [(x,y) for d in range(1, min(cur_x, self.rows-cur_y)+1) if (x:=cur_x-d)>=0 and (y:=cur_y+d)<self.rows]:
+                check_index = self.get_index(check_x, check_y)
+                if self.grid[check_index] == token: nw_count += 1
+                else: break
+
+            # Check West
+            w_count = 0
+            for check_x in range(cur_x-1, -1, -1):
+                check_index = self.get_index(check_x, cur_y)
+                if self.grid[check_index] == token: w_count += 1
+                else: break
+
+            # Check South West
+            sw_count = 0
+            for check_x, check_y in [(x,y) for d in range(1, min(cur_x, cur_y)+1) if (x:=cur_x-d)>=0 and (y:=cur_y-d)>=0]:
+                check_index = self.get_index(check_x, check_y)
+                if self.grid[check_index] == token: sw_count += 1
+                else: break
+
+            # Check South
+            s_count = 0
+            for check_y in range(cur_y-1, -1, -1):
+                check_index = self.get_index(cur_x, check_y)
+                if self.grid[check_index] == token: s_count += 1
+                else: break
+
+            # Check South East
+            se_count = 0
+            for check_x, check_y in [(x,y) for d in range(1, min(self.columns-cur_x, cur_y)+1) if (x:=cur_x+d)<self.columns and (y:=cur_y-d)>=0]:
+                check_index = self.get_index(check_x, check_y)
+                if self.grid[check_index] == token: se_count += 1
+                else: break
+
+            # Check East
+            e_count = 0
+            for check_x in range(cur_x+1, self.columns, 1):
+                check_index = self.get_index(check_x, cur_y)
+                if self.grid[check_index] == token: e_count += 1
+                else: break
+
+            # Check North East
+            ne_count = 0
+            for check_x, check_y in [(x,y) for d in range(1, min(self.columns-cur_x, self.rows-cur_y)+1) if (x:=cur_x+d)<self.columns and (y:=cur_y+d)<self.rows]:
+                check_index = self.get_index(check_x, check_y)
+                if self.grid[check_index] == token: ne_count += 1
+                else: break 
+
+            longest_run = max(w_count+e_count, sw_count+ne_count, s_count, se_count+nw_count)
+            if longest_run > neighbor_count: neighbor_count = longest_run
+
+        return neighbor_count
     
     def check_endgame(self, token)->EndState:
         """Return the End State of the game or None if the game is not finished"""
@@ -109,6 +197,7 @@ class AI:
     def __init__(self, token:str):
         self.token = token
 
+
     def play_turn(self, board:Grid):
         """Play the next move on the input game board"""
 
@@ -116,7 +205,7 @@ class AI:
 
             if (utility := parent.check_endgame(self.token)):
                 return utility
-            elif minimax_level > 4:
+            elif minimax_level > 3:
                 return EndState.Tie
             else:
                 #calculate the utility from children
@@ -124,8 +213,9 @@ class AI:
                 current_player = minimax_level % 2
                 current_token = tokens[current_player]
                 use_min = current_player == 0
-                for possible_move in parent.get_valid_moves():
-                    state = parent.drop_token(possible_move, current_token)
+                next_states = [parent.drop_token(possible_move, current_token) for possible_move in parent.get_valid_moves()]
+                sorted_states = sorted(next_states, key=lambda s: s.get_longest_run(current_token), reverse=True)
+                for state in sorted_states:
                     utility = calculate_utility(state, minimax_level+1)
                     if (use_min and utility < best) or (not use_min and utility > best):
                         best = utility
@@ -134,11 +224,11 @@ class AI:
                 return best
             
         # Pick the highest score for each of the children
-        
         best_score = None
         best_move = None
-        for possible_move in board.get_valid_moves():
-            state = board.drop_token(possible_move, self.token)
+        next_states = [board.drop_token(possible_move, self.token) for possible_move in board.get_valid_moves()]
+        sorted_states = sorted(next_states, key=lambda s: s.get_longest_run(self.token), reverse=True)
+        for state in sorted_states:
             utility = calculate_utility(state, 0)
 
             if best_score is None or utility > best_score:

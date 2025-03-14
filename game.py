@@ -10,6 +10,7 @@ board = Grid(ROWS, COLUMNS)
 
 
 #board.grid = [None, "x", "o", "o", "o", None,None, None, "x", "x", None, None,None, None, None, None, None, None,None, None, None, None, None, None,None, None, None, None, None, None]
+
 computer = AI(tokens[1])
 
 while board.check_endgame(tokens[turn%2]) is None:
@@ -23,4 +24,4 @@ while board.check_endgame(tokens[turn%2]) is None:
     turn+=1
 
 print(board)
-print(board.check_endgame(tokens[0]))
+print("You Win!" if board.check_endgame(tokens[0]) == 1 else "You Lose!")
