@@ -91,8 +91,10 @@ class Grid:
 
         neighbor_count = 0
         for index in available_indices:
+            if self.grid[index] != token: continue
             # Check diagonals, vertical, and horizontal for 4 in a row
             cur_x, cur_y = self.get_coord(index)
+
 
             # Check North West
             nw_count = 0
@@ -235,6 +237,7 @@ class AI:
         next_states = [board.drop_token(possible_move, self.token) for possible_move in board.get_valid_moves()]
         sorted_states = sorted(next_states, key=lambda s: s.get_longest_run(self.token), reverse=True)
         for state in sorted_states:
+            num = state.get_longest_run(self.token)
             if time.time() - start_time <= 10:
                 utility, max_level = calculate_utility(state, 0)
                 deepest_search = max(deepest_search, max_level)
