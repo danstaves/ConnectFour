@@ -6,11 +6,13 @@ from typing import List, Self
 import time
 
 class EndState(IntEnum):
+    """Enum for the end state of the game"""
     Win = 1
     Lose = -1
     Tie = 0
 
 class Grid:
+    """Class to represent the Connect 4 game board"""
     def __init__(self, rows:int, cols:int):
         self.rows = rows
         self.columns = cols
@@ -43,7 +45,7 @@ class Grid:
 
     def drop_token(self, column, token)->Self:
         """Drop a token in a specified column.
-        Return True is successful, False if the column is full"""
+        Return the new game Grid"""
         new_grid = self.copy()
         for index in range(column,self.rows*self.columns, self.columns):
             if not new_grid.grid[index]:
@@ -51,6 +53,7 @@ class Grid:
                 return new_grid
     
     def get_valid_moves(self)->List[int]:
+        """Return a list of columns that are valid moves"""
         def is_column_available(column)->bool:
             for index in range(column, self.columns * self.rows, self.columns):
                 if self.grid[index] is None: return True
@@ -107,6 +110,7 @@ class Grid:
 
 tokens = ["o", "x"]
 class AI:
+    """Class to represent the AI for the Connect 4 game"""
     def __init__(self, token:str):
         self.token = token
 
@@ -116,7 +120,7 @@ class AI:
         start_time = time.time()
 
         def calculate_utility(parent:Grid, minimax_level:int) -> tuple[EndState, int]:
-
+            """Recursively calculate the utility of the game board using minimax algorithm"""
             if time.time() - start_time > 10:
                 return (EndState.Tie, minimax_level)
             elif (utility := parent.check_endgame(self.token)):
