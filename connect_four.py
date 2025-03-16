@@ -6,21 +6,13 @@ from typing import List, Self
 import time
 
 class EndState(IntEnum):
+    """Enum for the end states of the game"""
     Win = 1
     Lose = -1
     Tie = 0
 
-class Direction(IntEnum):
-    North = auto()
-    NorthEast = auto()
-    East = auto()
-    SouthEast = auto()
-    South = auto()
-    SouthWest = auto()
-    West = auto()
-    NorthWest = auto()
-
 class Grid:
+    """Class to represent a Connect 4 game board"""
     def __init__(self, rows:int, cols:int):
         self.rows = rows
         self.columns = cols
@@ -56,21 +48,15 @@ class Grid:
 
     def drop_token(self, column, token)->Self:
         """Drop a token in a specified column.
-        Return True is successful, False if the column is full"""
+        Return the new Grid object with the token in the location specified"""
         new_grid = self.copy()
         for index in range(column,self.rows*self.columns, self.columns):
             if not new_grid.grid[index]:
                 new_grid.grid[index]=token
                 return new_grid
-            
-    def get_valid_indices(self)->List[int]:
-        def get_column_index(column)->bool:
-            for index in range(column, self.columns * self.rows, self.columns):
-                if self.grid[index] is None: return index
-
-        return [index for c in range(self.columns) if (index:=get_column_index(c)) is not None]
     
     def get_valid_moves(self)->List[int]:
+        """Return a list of columns that are valid moves"""
         def is_column_available(column)->bool:
             for index in range(column, self.columns * self.rows, self.columns):
                 if self.grid[index] is None: return True
@@ -80,7 +66,7 @@ class Grid:
         return [col for col in range(self.columns) if is_column_available(col)]
 
     def get_longest_run(self, token)->int:
-        """Return the number and length of runs"""
+        """Return the longest run of the token specified in the grid"""
 
         #Get the index of the top token in each column
         def get_top_index(col):
@@ -197,6 +183,7 @@ class Grid:
 
 tokens = ["o", "x"]
 class AI:
+    """Class to represent an AI player for Connect 4"""
     def __init__(self, token:str):
         self.token = token
 
@@ -207,6 +194,7 @@ class AI:
         start_time = time.time()
 
         def calculate_utility(parent:Grid, minimax_level:int) -> tuple[EndState, int]:
+            """Recursively calculate the utility of the game board using the minimax algorithm"""
 
             if time.time() - start_time > 10:
                 return (EndState.Tie, minimax_level)
@@ -235,9 +223,11 @@ class AI:
         best_move = None
         deepest_search = 0
         next_states = [board.drop_token(possible_move, self.token) for possible_move in board.get_valid_moves()]
+
+        #Sort the states by the longest run of the token BEFORE calling the utility function
         sorted_states = sorted(next_states, key=lambda s: s.get_longest_run(self.token), reverse=True)
+
         for state in sorted_states:
-            num = state.get_longest_run(self.token)
             if time.time() - start_time <= 10:
                 utility, max_level = calculate_utility(state, 0)
                 deepest_search = max(deepest_search, max_level)
@@ -245,6 +235,7 @@ class AI:
                     best_score = utility
                     best_move = state
         
+        #At the end of the AI's turn, print the depth the computer searched to
         print(f"Max Level: {deepest_search}")
         return best_move
 

@@ -8,11 +8,9 @@ turn = 0
 board = Grid(ROWS, COLUMNS)
 
 
-
-#board.grid = [None, "x", "o", "o", "o", None,None, None, "x", "x", None, None,None, None, None, None, None, None,None, None, None, None, None, None,None, None, None, None, None, None]
-#board.grid = ["x","x","o","o","x","o","x",None,None,"o",None,None,"x",None,None,None,None,None,"o",None,None,None,None,None,None,None,None,None,None,None]
 computer = AI(tokens[1])
 
+# Main Game Loop - Loop until a baord is in an endgame state
 while board.check_endgame(tokens[turn%2]) is None:
 
     print(board)
